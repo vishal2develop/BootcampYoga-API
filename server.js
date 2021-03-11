@@ -12,6 +12,7 @@ connectDB();
 
 //importing routes
 const bootcamps = require("./routes/bootcamps");
+const courses = require("./routes/courses");
 
 // initialize app
 const app = express();
@@ -27,6 +28,7 @@ if (process.env.NODE_ENV === "development") {
 
 // Mounting up routes
 app.use("/api/v1/bootcamps", bootcamps);
+app.use("/api/v1/courses", courses);
 
 //using errorHandler
 app.use(errorHandler);
