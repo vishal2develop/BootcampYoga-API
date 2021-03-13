@@ -9,26 +9,20 @@ const Bootcamp = require("../models/Bootcamp");
 // @access public
 
 exports.getCourses = asyncHandler(async (req, res, next) => {
-  let query;
+  // If bootcamp id is provided in url -> fetch details for specific bootcamp
   if (req.params.bootcampId) {
-    query = Course.find({ bootcamp: req.params.bootcampId }).populate({
-      path: "bootcamp",
-      select: "name description",
+    const courses = await Course.find({
+      bootcamp: req.params.bootcampId,
+    });
+    return res.status(200).json({
+      success: true,
+      count: courses.length,
+      data: courses,
     });
   } else {
-    // Populating data for reference(foreign) field
-    query = Course.find().populate({
-      path: "bootcamp",
-      select: "name description",
-    });
+    // Fetching all courses
+    res.status(200).json(res.advancedResults);
   }
-  const courses = await query;
-
-  res.status(200).json({
-    success: true,
-    count: courses.length,
-    data: courses,
-  });
 });
 
 // @desc GET Single Courses
