@@ -1,5 +1,6 @@
 const ErrorResponse = require("../utils/ErrorResponse");
 const asyncHandler = require("../middleware/async");
+const sendEmail = require("../utils/sendEmail");
 const User = require("../models/User");
 
 // @desc Register User
@@ -47,8 +48,66 @@ exports.login = asyncHandler(async (req, res, next) => {
   sendTokenResponse(user, 200, res);
 });
 
-// Get Token from model,create cookie and send response
+// @desc Get Current Logged in User
+// @route GET /api/v1/auth/me
+// @access Private
 
+exports.getMe = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+
+  res.status(200).json({
+    success: true,
+    data: user,
+  });
+});
+
+// @desc Forgot Password
+// @route POST /api/v1/auth/forgotpassword
+// @access Public
+
+exports.forgotPassword = asyncHandler(async (req, res, next) => {
+  const user = await User.findOne({ email: req.body.email });
+
+  if (!user) {
+    return next(new ErrorResponse("No user exists with this emai", 404));
+  }
+
+  // Get restet token
+  const resetToken = user.getResetPasswordToken();
+
+  // saving resetPasswordToken and resetPasswordExpired to db which we set in getResetPasswordToken
+  await user.save({ validateBeforeSave: false });
+
+  // Create reset url
+  const resetURL = `${req.protocol}://${req.get(
+    "host"
+  )}/api/v1/resetpassword/${resetToken}`;
+
+  const message = `You are receiving this email because you (or someone else) has requested
+   the reset of a password. Please make a PUT request to: \n\n ${resetURL}`;
+
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: "Password reset token",
+      message,
+    });
+    res.status(200).json({
+      success: true,
+      data: "Email sent",
+    });
+  } catch (err) {
+    console.log(err.red);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpired = undefined;
+
+    await user.save({ validateBeforeSave: false });
+
+    return next(new ErrorResponse("Email could not be sent"), 500);
+  }
+});
+
+// Get Token from model,create cookie and send response
 const sendTokenResponse = (user, statusCode, res) => {
   //   Create token
   const token = user.getSignedJwtToken();
@@ -71,16 +130,3 @@ const sendTokenResponse = (user, statusCode, res) => {
     token: token,
   });
 };
-
-// @desc Get Current Logged in User
-// @route GET /api/v1/auth/me
-// @access Private
-
-exports.getMe = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.user.id);
-
-  res.status(200).json({
-    success: true,
-    data: user,
-  });
-});

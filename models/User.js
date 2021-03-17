@@ -1,6 +1,9 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+// To generate reset token and hash it
+const crypto = require("crypto");
+const { userInfo } = require("os");
 const UserSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -36,6 +39,12 @@ const UserSchema = new mongoose.Schema({
 
 // Encrypt Password using bcrypt
 UserSchema.pre("save", async function (next) {
+  // bcrypt will require password for hashing but in forgot password route body we dont give any
+  if (!this.isModified("password")) {
+    // if password isn't modified - or passed along in the route body - move along
+    next();
+  }
+
   //  Generating salt rounds
   const salt = await bcrypt.genSalt(10);
   // Hashing password and storing in password field
@@ -52,6 +61,25 @@ UserSchema.methods.getSignedJwtToken = function () {
 // Match user entered password to hashed password in db
 UserSchema.methods.matchPassword = async function (entered_password) {
   return await bcrypt.compare(entered_password, this.password);
+};
+
+// Generate and hash password reset token
+UserSchema.methods.getResetPasswordToken = function () {
+  // Generate Token
+  const resetToken = crypto.randomBytes(20).toString("hex");
+
+  console.log(resetToken);
+
+  // Hash Token and set to resetPasswordToken field
+  this.resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  // Set resetPasswordExpired - 10 minutes
+  this.resetPasswordExpired = Date.now() + 10 * 60 * 1000;
+
+  return resetToken;
 };
 
 module.exports = mongoose.model("User", UserSchema);
