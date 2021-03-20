@@ -14,7 +14,13 @@ const errorHandler = (err, req, res, next) => {
   }
   // Mongoose duplicate key
   if (err.code === 11000) {
-    const message = `Resource with name ${err.keyValue.name} already exists`;
+    let message = "";
+    if (err.keyValue.name === undefined) {
+      message = "Duplicate field value entered";
+    } else {
+      message = `Resource with name ${err.keyValue.name} already exists`;
+    }
+
     error = new ErrorResponse(message, 400);
   }
   // Mongoose Validation Error

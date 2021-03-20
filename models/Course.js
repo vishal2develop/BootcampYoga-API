@@ -73,7 +73,7 @@ CourseSchema.post("save", function () {
   this.constructor.getAverageCost(this.bootcamp);
 });
 
-// Get Average cost before save - pre hook
+// Get Average cost before remove - pre hook
 CourseSchema.pre("remove", function () {
   this.constructor.getAverageCost(this.bootcamp);
 });
