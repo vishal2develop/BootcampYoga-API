@@ -7,6 +7,7 @@ const colors = require("colors");
 const connectDB = require("./config/db");
 const fileupload = require("express-fileupload");
 const cookieParser = require("cookie-parser");
+const mongoSanitize = require("express-mongo-sanitize");
 // Load env vars
 dotenv.config({ path: "./config/config.env" });
 
@@ -35,6 +36,9 @@ if (process.env.NODE_ENV === "development") {
 }
 //  File Uploading
 app.use(fileupload());
+
+// Sanitizing Data
+app.use(mongoSanitize());
 
 //  Set static folder
 app.use(express.static(path.join(__dirname, "public")));
